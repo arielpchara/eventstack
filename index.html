@@ -9,29 +9,47 @@
 <body>
 <script>
 
-var e = eventStack('main');
+var eMain = new eventStack('main');
 
+eMain.push(function(stk,data){
+	l('ZER0');
+	return true;
+});
 
-e.push(function(stk,data){
+eMain.push(function(stk,data){
 	data.name = data.name.split('');
 	l(data)
+	return true;
 },{name:'split',depend:'upper'});
 
-e.push(function(stk,data){
+eMain.push(function(stk,data){
 	l(stk,data);
 	data.name = data.name.toUpperCase();
 	return true;
 },{name:'upper',depend:'set-name'});
 
-e.push(function(stk){
-	l(stk,'delay');
+eMain.push(function(stk){
+	l('delay 1s');
 	setTimeout(function(){
 		stk.next({name:'fulano'});
+		l(stk);
 	},1000);
-},{name:'set-name'});
+},{name:'set-name',depend:'main'});
+
+eMain.push(function(stk,data){
+	l('X');
+	return true;
+},{name:'main'});
+
+eMain.run();
 
 
-e.run();
+var eSecond = new eventStack('second');
+eSecond.push(function(stk,data){
+	l('dois','ZER0');
+	return true;
+});
+eSecond.run();
 
 /*
 e.prep(function(stk,data){

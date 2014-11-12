@@ -10,6 +10,7 @@ var stack = function() {
 		hold: {},
 		shcheduled: [],
 		push: function(action, params) {
+			params = params || {};
 			_.extend(params,{
 				'action': action
 			})
@@ -22,30 +23,19 @@ var stack = function() {
 
 			var scheduler = function(item){
 				self.shcheduled.push(item);
-				var depends = _.where(self.stack,{ depend : item.name });
-				self.shcheduled.concat(depends);
-				_.map(depends,function(item){
-					scheduler(item);
-				});
+				if(item.name){
+					var depends = _.where(self.stack,{ depend : item.name });
+					self.shcheduled.concat(depends);
+					_.map(depends,function(item){
+						scheduler(item);
+					});
+				}
 			}
-
 			_.each(self.stack,function(item){
 				if( !item.depend ){
 					scheduler(item);
 				}
-				/*
-				if( item.depend && !_.where(shcheduled,{name:item.depend}) ){
-					self.hold[item.depend] = self.hold[item.depend] || [];
-					self.hold[item.depend].push(item);
-				}else{
-					shcheduled.push(item);
-					_.each(self.hold[item.name], function(holded){
-						shcheduled.push( holded );
-					});
-				}
-				*/
 			});
-			l(self.shcheduled)
 			self.next(data);
 			return self;
 		},
