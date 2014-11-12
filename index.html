@@ -3,11 +3,47 @@
 <head>
 	<meta charset="UTF-8">
 	<title>stack</title>
-	<script src="underscore.js"></script>
-	<script src="stack.js"></script>
+	<script src="//cdnjs.cloudflare.com/ajax/libs/underscore.js/1.7.0/underscore-min.js"></script>
+	<script src="eventstack.js"></script>
 </head>
 <body>
-	
+<script>
+
+var e = eventStack('main');
+
+
+e.push(function(stk,data){
+	data.name = data.name.split('');
+	l(data)
+},{name:'split',depend:'upper'});
+
+e.push(function(stk,data){
+	l(stk,data);
+	data.name = data.name.toUpperCase();
+	return true;
+},{name:'upper',depend:'set-name'});
+
+e.push(function(stk){
+	l(stk,'delay');
+	setTimeout(function(){
+		stk.next({name:'fulano'});
+	},1000);
+},{name:'set-name'});
+
+
+e.run();
+
+/*
+e.prep(function(stk,data){
+	l(stk.step);
+	return true;
+})
+
+e.run({
+	name: 'paulo'
+});
+*/
+</script>	
 
 </body>
 </html>

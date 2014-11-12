@@ -1,0 +1,22 @@
+{
+  "name": "eventstack",
+  "main": "eventstack.js",
+  "version": "0.0.0",
+  "homepage": "https://github.com/arielpchara/eventstack",
+  "authors": [
+    "arielpchara <ariel@pchara.com>"
+  ],
+  "description": "I need to have more control over events in a way asynchronous",
+  "keywords": [
+    "events",
+    "javascript"
+  ],
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ]
+}
