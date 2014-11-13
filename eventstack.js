@@ -8,9 +8,10 @@ var stack = function() {
 		stack: [],
 		hold: {},
 		shcheduled: [],
-		push: function(name,action, params) {
-			var sequence = _.chain(name.split('/')).without('')
-			var name = sequence.value().join('/');
+		push: function(name,action,params) {
+			name = name || String(self.stack.length);
+			var sequence = _.chain(name.split('/')).without('');
+			var name = sequence.without('^').value().join('/');
 			var depend =  sequence.initial().value().join('/');
 			params = params || {};
 			_.extend(params,{
@@ -22,21 +23,26 @@ var stack = function() {
 			return self;
 		},
 		run: function(data) {
+			data = data || {};
 			_.extend(self,{
 				step:-1,
 				shcheduled: [],
 				hold: {}
 			})
-			shcheduled = self.shcheduled;
 			var scheduler = function(item){
-				self.shcheduled.push(item);
-				if(item.name){
-					var depends = _.where(self.stack,{ depend : item.name });
-					self.shcheduled.concat(depends);
-					_.map(depends,function(item){
+				var prepends = _.where(self.stack,{ depend : '^/'+item.name });
+				if( prepends.length > 0 ){
+					_.map(prepends,function(item){
 						scheduler(item);
 					});
+					self.shcheduled.concat(prepends);
 				}
+				self.shcheduled.push(item);
+				var depends = _.where(self.stack,{ depend : item.name });
+				self.shcheduled.concat(depends);
+				_.map(depends,function(item){
+					scheduler(item);
+				});
 			}
 			_.each(self.stack,function(item){
 				if( item.depend == '' ){
@@ -44,7 +50,7 @@ var stack = function() {
 				}
 			});
 			self.next(data);
-			return self;
+			return data;
 		},
 		lock: function(){
 			self.locked = true;
@@ -57,16 +63,14 @@ var stack = function() {
 		next: function(data,step){
 			self.step = step || self.step;
 			self.step++;
-			if( !self.locked && shcheduled[self.step] && shcheduled[self.step].action(self,data) ){
-				self.next(data);
-			}
-			if( shcheduled.length == self.step ){
+			if( self.shcheduled.length == self.step ){
 				self.reset()
+			}else if( !self.locked && self.shcheduled[self.step] && self.shcheduled[self.step].action(self,data) ){
+				self.next(data);
 			}
 		}
 	});
 }
-
 
 var eventStack = function() {
 	var self = this;
@@ -74,6 +78,7 @@ var eventStack = function() {
 	return function(name) {
 		if (!self.list[name]) {
 			self.list[name] = new stack();
+			self.list[name].stackName = name;
 		}
 		return self.list[name];
 	}
