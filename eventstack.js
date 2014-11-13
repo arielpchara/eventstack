@@ -3,15 +3,20 @@ var l = console.log.bind(console);
 
 var stack = function() {
 	var self = this;
-
 	_.extend(self,{
+		locked: false,
 		stack: [],
 		hold: {},
 		shcheduled: [],
-		push: function(action, params) {
+		push: function(name,action, params) {
+			var sequence = _.chain(name.split('/')).without('')
+			var name = sequence.value().join('/');
+			var depend =  sequence.initial().value().join('/');
 			params = params || {};
 			_.extend(params,{
-				'action': action
+				'action': action,
+				'name':name,
+				'depend':depend
 			})
 			self.stack.push(params);
 			return self;
@@ -34,12 +39,15 @@ var stack = function() {
 				}
 			}
 			_.each(self.stack,function(item){
-				if( !item.depend ){
+				if( item.depend == '' ){
 					scheduler(item);
 				}
 			});
 			self.next(data);
 			return self;
+		},
+		lock: function(){
+			self.locked = true;
 		},
 		reset: function(step){
 			_.extend(self,{
@@ -49,7 +57,7 @@ var stack = function() {
 		next: function(data,step){
 			self.step = step || self.step;
 			self.step++;
-			if( shcheduled[self.step] && shcheduled[self.step].action(self,data) ){
+			if( !self.locked && shcheduled[self.step] && shcheduled[self.step].action(self,data) ){
 				self.next(data);
 			}
 			if( shcheduled.length == self.step ){

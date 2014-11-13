@@ -28,34 +28,33 @@
 (function(){
 
 	var eMain = eventStack('main');
+	var eSecond = eventStack('second');
 
-
-
-	eMain.push(function(stk,data){
-		return true;
-	});
-
-
-	eMain.push(function(stk,data){
+	eMain.push('/main/q/sim',function(stk,data){
 		if( data.resposta == 'sim' ){
 			log(stk.step,'Ah, beleza.');
 			return false;
 		}
 		return true;
-	},{name:'sim',depend:'q'});
+	});
 
-	eMain.push(function(stk,data){
+	eMain.push('/main/q/nao',function(stk,data){
+		eSecond.push('second',function(stk,d){
+			log('>',data.resposta,  JSON.stringify(d) );
+			return true;
+		});
 		log(stk.step,'Me fale mais sobre isso!');
 		return true;
-	},{name:'nao',depend:'q'});
+	});
 
-	eMain.push(function(stk,data){
+	eMain.push('/main/q/fim',function(stk,data){
 		log(stk.step,'fim');
 		return true;
-	},{name:'split',depend:'q'});
+	});
 
-	eMain.push(function(stk,data){
+	eMain.push('/main/q',function(stk,data){
 		log(stk.step,'Espera 1s...');
+		$(data).attr('disabled',true);
 		setTimeout(function(){
 			var step = stk.step;
 			var sim = $('<a href=#>').append('Você acha que sim?').click(function(){
@@ -70,12 +69,12 @@
 			})
 			log(stk.step,'A chuva vai para baixo ?',sim,nao);
 		},1000);
-	},{name:'q',depend:'main'});
+	});
 
-	eMain.push(function(stk,data){
+	eMain.push('/main',function(stk,data){
 		log(stk.step,'go!');
 		return true;
-	},{name:'main'});
+	});
 
 })();
 
@@ -84,20 +83,33 @@
 (function(){
 	var eMain = eventStack('main');
 	$('<button>').append('CLICK').click(function(){
-		eMain.run();
+		eMain.run(this);
 	}).appendTo('body');
 
 })();
 
 (function(){
 	var eSecond = eventStack('second');
-	eSecond.push(function(stk,data){
-		l(this)
-		log('Outra coisa',this);
+	var eMain = eventStack('main');
+	eSecond.push('second',function(stk,data){
+		log('Outra coisa 2º');
 		return true;
 	});
-	eSecond.run();
-	
+	eMain.push('segundo',function(){
+		var bt = $('<button>').append('btn 2').click(function(){
+			eSecond.run({nome:'2ª'});
+		});
+		var rs = $('<button>').append('cancelar tudo').click(function(){
+			$('#logger').empty();
+			eMain.push('/cancelado',function(){
+				log('ja fui refeito');
+				return true;
+			})
+			eMain.run();
+		});
+		log(bt,rs)
+		return true;
+	})
 })()
 
 /*
