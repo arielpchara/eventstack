@@ -5,7 +5,6 @@ var stack = function() {
 	var self = this;
 
 	_.extend(self,{
-		stoped: false,
 		stack: [],
 		hold: {},
 		shcheduled: [],
@@ -18,9 +17,12 @@ var stack = function() {
 			return self;
 		},
 		run: function(data) {
-			self.step = -1;
+			_.extend(self,{
+				step:-1,
+				shcheduled: [],
+				hold: {}
+			})
 			shcheduled = self.shcheduled;
-
 			var scheduler = function(item){
 				self.shcheduled.push(item);
 				if(item.name){
@@ -39,10 +41,19 @@ var stack = function() {
 			self.next(data);
 			return self;
 		},
-		next: function(data){
+		reset: function(step){
+			_.extend(self,{
+				step:(step || 0)-1
+			})
+		},
+		next: function(data,step){
+			self.step = step || self.step;
 			self.step++;
 			if( shcheduled[self.step] && shcheduled[self.step].action(self,data) ){
 				self.next(data);
+			}
+			if( shcheduled.length == self.step ){
+				self.reset()
 			}
 		}
 	});
