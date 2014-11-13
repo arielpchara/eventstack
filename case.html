@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>Document</title>
+	<script src="jquery.min.js"></script>
+	<script src="underscore-min.js"></script>
+	<script src="eventstack.js"></script>
+</head>
+<body>
+
+<div>
+	<button id='buyButton'>Comprar</button>
+	<script>
+		(function() {
+			var stack = eventStack('buy')
+				.push('/submit', function(e, data) {
+					l(data);
+				});
+			$('#buyButton').click(function() {
+				stack.run({});
+			})
+		})()
+	</script>
+</div>
+
+<div id="form">
+	<form>
+		<div>a:<input type="text"></div>
+		<div>b:<input type="text"></div>
+		<div>b:<input type="text"></div>
+		<div>d:<input type="text"></div>
+		<div>e:<input type="text"></div>
+	</form>
+	<script>
+		(function() {
+			var form = $('#form');
+			var inputs = form.find('input[type=text]');
+			eventStack('counter.reset').push(null,function(s,data){
+				inputs.each(function(){
+					$(this).val('');
+				});
+			});
+			var counter = eventStack('counter');
+			inputs.each(function(){
+				var self = $(this);
+				counter.push(false,function(s,data){
+					if( self.val() > 0 )
+						data.totalizador += parseInt(self.val());
+					return true;
+				})
+			})
+			var e = eventStack('buy').push('^/submit/produtos', function(e, data) {
+				var post = [];
+				_.extend(data,counter.run({totalizador:0}));
+				return true;
+			});
+		})();
+	</script>
+</div>
+
+<div>
+	<span id='total'></span>
+	<script>
+	(function(){
+		eventStack('buy').push('^/submit/total', function(e, data) {
+			$('#total').html(data.totalizador);
+			return true;
+		});
+	})()
+	</script>
+</div>
+
+<div>
+	<div id="validation" style='display:none'>ERRO!
+	</div>
+	<script>
+	(function(){
+		eventStack('buy').push('^/submit/valid', function(e, data) {
+			if( data.totalizador > 0 ){
+				$('#validation').hide();
+				return true;
+			}else{
+				$('#validation').show();
+			}
+		});
+	})()
+	</script>
+</div>
+
+<div>
+	<div id="confirmacao" style='display:none'>
+		Confirmar ?
+		<button class="sim">sim</button>
+		<button class="nao">não</button>
+	</div>
+	<script>
+	(function(){
+		var confirmacao = $("#confirmacao");
+		eventStack('buy').push('^/submit/confirm', function(e, data) {
+			confirmacao.show();
+			var step = e.step;
+			confirmacao.find('.sim').click(function(){
+				e.next(data,step);
+				$(this).unbind();
+			});
+			confirmacao.find('.nao').unbind().click(function(){
+				e.reset();
+				confirmacao.hide();
+				$(this).unbind();
+				eventStack('counter.reset').run();
+			});
+		});
+	})()
+	</script>
+</div>
+
+</body>
+</html>

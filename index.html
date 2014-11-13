@@ -3,8 +3,8 @@
 <head>
 	<meta charset="UTF-8">
 	<title>stack</title>
-	<script src="https://code.jquery.com/jquery-1.11.1.js"></script>
-	<script src="//cdnjs.cloudflare.com/ajax/libs/underscore.js/1.7.0/underscore-min.js"></script>
+	<script src="jquery.min.js"></script>
+	<script src="underscore-min.js"></script>
 	<script src="eventstack.js"></script>
 </head>
 <body>
@@ -13,7 +13,6 @@
 </ol>
 
 <script>
-
 
 	function log(){
 		var line = $("<li>").appendTo("#logger");
@@ -32,57 +31,66 @@
 
 	eMain.push('/main/q/sim',function(stk,data){
 		if( data.resposta == 'sim' ){
-			log(stk.step,'Ah, beleza.');
+			log(stk.step,'Resposta sim, interrompe a execução.','return false;');
 			return false;
 		}
 		return true;
 	});
 
 	eMain.push('/main/q/nao',function(stk,data){
-		eSecond.push('second',function(stk,d){
-			log('>',data.resposta,  JSON.stringify(d) );
+
+		eSecond.push('second',function(stk){
+			log(stk.step,'evento inserido pela resposta nao no outro stack');
 			return true;
 		});
-		log(stk.step,'Me fale mais sobre isso!');
+
+		log(stk.step,'Resposta nao, continua a execução.');
+		return true;
+	});
+
+	eMain.push('/^/main/q/antes',function(stk,data){
+		log(stk.step,'inserido antes A');
+		return true;
+	});
+	eMain.push('/main/q/antes/b',function(stk,data){
+		log(stk.step,'inserido depois B');
 		return true;
 	});
 
 	eMain.push('/main/q/fim',function(stk,data){
-		log(stk.step,'fim');
+		log(stk.step,'ultimo evento');
 		return true;
 	});
 
 	eMain.push('/main/q',function(stk,data){
-		log(stk.step,'Espera 1s...');
+		log(stk.step,'Asincrono com timeout de 1s.','Depende de "main".');
 		$(data).attr('disabled',true);
 		setTimeout(function(){
 			var step = stk.step;
-			var sim = $('<a href=#>').append('Você acha que sim?').click(function(){
+			var sim = $('<a href=#>').append('sim').click(function(){
 				stk.next({
 					resposta: 'sim'
 				},step);
 			})
-			var nao = $('<a href=#>').append('Você acha que não?').click(function(){
+			var nao = $('<a href=#>').append('nao').click(function(){
 				stk.next({
 					resposta: 'nao'
 				},step);
 			})
-			log(stk.step,'A chuva vai para baixo ?',sim,nao);
+			log(stk.step,'Continuar passando parametro resposta=(',sim,'|',nao,')');
 		},1000);
 	});
 
 	eMain.push('/main',function(stk,data){
-		log(stk.step,'go!');
+		log(stk.step,'Inicio, função sem dependencias');
 		return true;
 	});
 
 })();
 
-
-
 (function(){
 	var eMain = eventStack('main');
-	$('<button>').append('CLICK').click(function(){
+	$('<button>').append('Inicia stack main').click(function(){
 		eMain.run(this);
 	}).appendTo('body');
 
@@ -91,23 +99,23 @@
 (function(){
 	var eSecond = eventStack('second');
 	var eMain = eventStack('main');
-	eSecond.push('second',function(stk,data){
-		log('Outra coisa 2º');
+	eSecond.push('init',function(stk,data){
+		log(stk.step,'Stack second, sem dependencias');
 		return true;
 	});
-	eMain.push('segundo',function(){
-		var bt = $('<button>').append('btn 2').click(function(){
+	eMain.push('botoes',function(stk){
+		var bt = $('<button>').append('roda stack second').click(function(){
 			eSecond.run({nome:'2ª'});
 		});
 		var rs = $('<button>').append('cancelar tudo').click(function(){
 			$('#logger').empty();
 			eMain.push('/cancelado',function(){
-				log('ja fui refeito');
+				log('adicionado pelo stack second evento botoes');
 				return true;
 			})
 			eMain.run();
 		});
-		log(bt,rs)
+		log(stk.step,'botoes do evendo botoes, scack second:',bt,rs)
 		return true;
 	})
 })()
