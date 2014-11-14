@@ -27,6 +27,7 @@
 (function(){
 
 	var eMain = eventStack('main');
+	
 	var eSecond = eventStack('second');
 
 	eMain.push('/main/q/sim',function(stk,data){
@@ -48,7 +49,7 @@
 		return true;
 	});
 
-	eMain.push('/^/main/q/antes',function(stk,data){
+	eMain.push('/main/q/antes',function(stk,data){
 		log(stk.step,'inserido antes A');
 		return true;
 	});
@@ -71,12 +72,12 @@
 				stk.next({
 					resposta: 'sim'
 				},step);
-			})
+			});
 			var nao = $('<a href=#>').append('nao').click(function(){
 				stk.next({
 					resposta: 'nao'
 				},step);
-			})
+			});
 			log(stk.step,'Continuar passando parametro resposta=(',sim,'|',nao,')');
 		},1000);
 	});
@@ -92,6 +93,8 @@
 	var eMain = eventStack('main');
 	$('<button>').append('Inicia stack main').click(function(){
 		eMain.run(this);
+		l(eMain.getStakNames());
+		l(eMain.getScheduledNames());
 	}).appendTo('body');
 
 })();
@@ -112,13 +115,13 @@
 			eMain.push('/cancelado',function(){
 				log('adicionado pelo stack second evento botoes');
 				return true;
-			})
+			});
 			eMain.run();
 		});
-		log(stk.step,'botoes do evendo botoes, scack second:',bt,rs)
+		log(stk.step,'botoes do evendo botoes, scack second:',bt,rs);
 		return true;
-	})
-})()
+	});
+})();
 
 /*
 e.prep(function(stk,data){

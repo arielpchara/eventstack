@@ -14,12 +14,21 @@
 	<script>
 		(function() {
 			var stack = eventStack('buy')
-				.push('/submit', function(e, data) {
+				.push('start',function(){
+					$('#buyButton').attr('disabled',true);
+					return true;
+				})
+				.erro(function(e,data){
+					l('erro');
+					e.reset();
+					$('#buyButton').removeAttr('disabled');
+				})
+				.done(function(e,data) {
 					l(data);
 				});
 			$('#buyButton').click(function() {
-				stack.run({});
-			})
+				stack.run();
+			});
 		})()
 	</script>
 </div>
@@ -48,9 +57,9 @@
 					if( self.val() > 0 )
 						data.totalizador += parseInt(self.val());
 					return true;
-				})
-			})
-			var e = eventStack('buy').push('^/submit/produtos', function(e, data) {
+				});
+			});
+			var e = eventStack('buy').push('start/produtos', function(e, data) {
 				var post = [];
 				_.extend(data,counter.run({totalizador:0}));
 				return true;
@@ -63,7 +72,7 @@
 	<span id='total'></span>
 	<script>
 	(function(){
-		eventStack('buy').push('^/submit/total', function(e, data) {
+		eventStack('buy').push('start/total', function(e, data) {
 			$('#total').html(data.totalizador);
 			return true;
 		});
@@ -76,12 +85,13 @@
 	</div>
 	<script>
 	(function(){
-		eventStack('buy').push('^/submit/valid', function(e, data) {
+		eventStack('buy').push('start/valid', function(e, data) {
 			if( data.totalizador > 0 ){
 				$('#validation').hide();
 				return true;
 			}else{
 				$('#validation').show();
+				return false;
 			}
 		});
 	})()
@@ -97,21 +107,20 @@
 	<script>
 	(function(){
 		var confirmacao = $("#confirmacao");
-		eventStack('buy').push('^/submit/confirm', function(e, data) {
+		eventStack('buy').push('start/confirm', function(e, data) {
 			confirmacao.show();
 			var step = e.step;
-			confirmacao.find('.sim').click(function(){
+			confirmacao.find('.sim').unbind().click(function(){
 				e.next(data,step);
-				$(this).unbind();
 			});
 			confirmacao.find('.nao').unbind().click(function(){
-				e.reset();
+				e.erro();
 				confirmacao.hide();
-				$(this).unbind();
 				eventStack('counter.reset').run();
+
 			});
 		});
-	})()
+	})();
 	</script>
 </div>
 

@@ -3,85 +3,119 @@ var l = console.log.bind(console);
 
 var stack = function() {
 	var self = this;
-	_.extend(self,{
+	_.extend(self, {
 		locked: false,
 		stack: [],
 		hold: {},
 		shcheduled: [],
-		push: function(name,action,params) {
+		data: {},
+		onDone: function(){ return false; },
+		onErro: function(){ return false; },
+		// include event on stack
+		// name can determine where event is scheduled
+		// ex: /main/something ('something' run after 'main' is included)
+		// prefix '^' put 'something' before 'main'
+		push: function(name, action, params) {
+			action = action || function(){ return true; };
 			name = name || String(self.stack.length);
-			var sequence = _.chain(name.split('/')).without('');
-			var name = sequence.without('^').value().join('/');
-			var depend =  sequence.initial().value().join('/');
+			name = _.chain(name.split('/')).without('').value();
 			params = params || {};
-			_.extend(params,{
+			_.extend(params, {
 				'action': action,
-				'name':name,
-				'depend':depend
-			})
+				'name': name.join('/'),
+				'tree': name
+			});
 			self.stack.push(params);
 			return self;
 		},
+		done: function(done){
+			if( typeof done == 'function'){
+				self.onDone = done;
+			}else{
+				return self.onDone(self,done);
+			}
+			return self;
+		},
+		erro: function(erro){
+			if( typeof erro == 'function'){
+				self.onErro = erro;
+			}else{
+				return self.onErro(self,erro);
+			}
+			return self;
+		},
+		// start process stack
 		run: function(data) {
 			data = data || {};
-			_.extend(self,{
-				step:-1,
+			_.extend(self, {
+				step: -1,
 				shcheduled: [],
 				hold: {}
-			})
-			var scheduler = function(item){
-				var prepends = _.where(self.stack,{ depend : '^/'+item.name });
-				if( prepends.length > 0 ){
-					_.map(prepends,function(item){
-						scheduler(item);
-					});
-					self.shcheduled.concat(prepends);
-				}
-				self.shcheduled.push(item);
-				var depends = _.where(self.stack,{ depend : item.name });
-				self.shcheduled.concat(depends);
-				_.map(depends,function(item){
-					scheduler(item);
-				});
-			}
-			_.each(self.stack,function(item){
-				if( item.depend == '' ){
-					scheduler(item);
-				}
 			});
+			var tree = function(depth,namespace){
+				namespace = namespace || "";
+				_.chain(self.stack).filter(function(stack){
+					return (stack.tree.length-1 === depth && _.first(stack.tree,depth).join('/') ===  namespace);
+				}).map(function(stack){
+					self.shcheduled.push(stack);
+					var next = _.first(stack.tree,depth+1);
+					if( next ){
+						tree(depth+1,next.join('/'));
+					}
+				});
+			};
+			tree(0);
 			self.next(data);
 			return data;
 		},
-		lock: function(){
+		// lock de carrier
+		lock: function() {
 			self.locked = true;
+			return self;
 		},
-		reset: function(step){
-			_.extend(self,{
-				step:(step || 0)-1
-			})
+		// reset carrier
+		reset: function(step) {
+			_.extend(self, {
+				step: (step || 0) - 1
+			});
+			return self;
 		},
-		next: function(data,step){
+		// execute next event on stack
+		next: function(data, step) {
 			self.step = step || self.step;
 			self.step++;
-			if( self.shcheduled.length == self.step ){
-				self.reset()
-			}else if( !self.locked && self.shcheduled[self.step] && self.shcheduled[self.step].action(self,data) ){
+			l(self.shcheduled.length,self.step);
+			var response =  (!self.locked && self.shcheduled[self.step] && self.shcheduled[self.step].action(self, data));
+			if (self.shcheduled.length == self.step ) {
+				self.onDone(self,data);
+				self.reset();
+			} else if ( response ) {
 				self.next(data);
+			}else if( response === false ){
+				self.onErro(self,data);
 			}
-		}
+			return self;
+		},
+		// helpers
+		getStakNames: function() {
+			return _.pluck(self.stack, 'name');
+		},
+		getScheduledNames: function() {
+			return _.pluck(self.shcheduled, 'name');
+		},
 	});
-}
+};
 
-var eventStack = function() {
+var eventStackClass = function() {
 	var self = this;
-	self.list = {}
+	self.list = {};
 	return function(name) {
 		if (!self.list[name]) {
 			self.list[name] = new stack();
 			self.list[name].stackName = name;
 		}
 		return self.list[name];
-	}
-}
+	};
+};
 
-var eventStack = new eventStack();
+var eventStack = new eventStackClass();
