@@ -84,7 +84,6 @@ var stack = function() {
 		next: function(data, step) {
 			self.step = step || self.step;
 			self.step++;
-			l(self.shcheduled.length,self.step);
 			var response =  (!self.locked && self.shcheduled[self.step] && self.shcheduled[self.step].action(self, data));
 			if (self.shcheduled.length == self.step ) {
 				self.onDone(self,data);
